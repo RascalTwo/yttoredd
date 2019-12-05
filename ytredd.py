@@ -74,30 +74,24 @@ def main():
             url = f'http://youtube.com/watch?v={id}'
 
 
-            # #doesn't convert it from yt api duration format
-            # url3 = f'https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id={id}&key={api_key}'
-            # data1 = get(url3).json()
-            # for y in data1['items']:
-            #     duration = y['contentDetails']['duration']
-            #     dur=isodate.parse_duration(duration)
-            #     video_dur = dur.total_seconds()
-            #     sys.stdout.write(duration)
-            # def parsed(e):
-            #     n = e.replace(/D|H|M/g,":").replace(/P|T|S/g,"").split(":")
+            url3 = f'https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id={id}&key={api_key}'
+            data1 = get(url3).json()
+            for y in data1['items']:
+                duration = y['contentDetails']['duration']
+                dur=isodate.parse_duration(duration)
+                video_dur = dur.total_seconds()
 
-            #     if 1==len(n):
-            #         2!=len(n[0]) && (n[0]="0"+n[0]),n[0]="0:"+n[0]
-            #     else:
-            #         r = 1
-            #         l = len(n) -1
-            #         for r in l:
-            #             2 != len(n[r]) && (n[r]="0"+n[r])
-            #     return n.join(":")
-
-            # import time
-            # time.strftime('%Y-%m-%d', time.localtime())
-
-
+            # D:H:M:S
+            duration = ''
+            remaining = video_dur
+            intervals = [86400, 3600, 60]
+            for i in intervals:
+                count = remaining // i
+                if not count:
+                    continue
+                remaining -= count * i
+                duration += f'{count}:'
+            duration += f'{remaining}'
 
         if not db.exists(id):
             for x in title:
@@ -105,7 +99,7 @@ def main():
 
             if reddit_on:
                 print(f'Posting {title} to Reddit')
-                reddit.subreddit(target_subreddit).submit(title=title, url=url)
+                reddit.subreddit(target_subreddit).submit(title=f'{title}{f" [{duration}]" if duration else ""}', url=url)
 
             db.set(id, title)
             db.dump()
