@@ -21,6 +21,8 @@ db_location = config['OPTIONS']['db_location']
 db = pickledb.load(db_location, False)
 
 api_key = config['YOUTUBE']['api_key']
+
+# Split the string of comma-seperated IDs into a list of IDs
 target_channel_ids = config['YOUTUBE']['target_channel_ids'].split(',')
 
 client_id = config['REDDIT']['client_id']
@@ -84,14 +86,21 @@ def main():
 
                 # D:H:M:S
                 duration = ''
-                remaining = video_dur
+                # video_dur is a decimal, we want an integer
+                remaining = int(video_dur)
+                # Number Of seconds in a day, hour, and minute
                 intervals = [86400, 3600, 60]
                 for i in intervals:
+                    # Whole Number of (days|hours|minutes)s in the remaining number of seconds
                     count = remaining // i
                     if not count:
+                        # Don't add if 0, to prevent 0:0:0:30 for a 30 second video
                         continue
+
+                    # Subtract count (days|hours|minutes)s in seconds from the remaining number of seconds
                     remaining -= count * i
                     duration += f'{count}:'
+                # Add remaining seconds to the duration string
                 duration += f'{remaining}'
 
             if not db.exists(id):
@@ -100,7 +109,9 @@ def main():
 
                 if reddit_on:
                     print(f'Posting {title} to Reddit')
-                    reddit.subreddit(target_subreddit).submit(title=f'{title}{f" [{duration}]" if duration else ""}', url=url)
+                    # If there is a duration, add it within []s, otherwise just use the title
+                    post_title = f'{title} [{duration}]' if duration else f'{title}'
+                    reddit.subreddit(target_subreddit).submit(title=post_title, url=url)
 
                 db.set(id, title)
                 db.dump()
